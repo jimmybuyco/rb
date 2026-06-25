@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hold or Conquer">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#14151a">
+<title>Hold or Conquer</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #14151a;
+    --surface: #1d1f26;
+    --surface-2: #262932;
+    --border: #32353f;
+    --text: #f2f3f5;
+    --text-secondary: #9a9ea8;
+    --text-tertiary: #6b6f79;
+    --hold: #3fa3e0;
+    --hold-bg: #1c2c38;
+    --conquer: #e0633f;
+    --conquer-bg: #382520;
+    --danger: #e05c5c;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior-y: contain;
+    height: 100%;
+  }
+  body {
+    padding-top: calc(var(--safe-top) + 14px);
+    padding-bottom: calc(var(--safe-bottom) + 14px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .app { max-width: 480px; width: 100%; margin: 0 auto; padding: 0 16px; flex: 1; display: flex; flex-direction: column; }
+
+  .topbar { display: flex; align-items: center; justify-content: center; padding: 6px 0 18px; position: relative; }
+  .topbar h1 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -0.2px; }
+  .reset-btn {
+    position: absolute; right: 0; top: 0;
+    background: none; border: none; color: var(--text-tertiary);
+    font-size: 20px; padding: 6px; line-height: 1;
+  }
+
+  .scores { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+  .score-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 14px 10px; text-align: center;
+  }
+  .score-card .label { font-size: 12px; color: var(--text-secondary); margin: 0 0 6px; font-weight: 500; }
+  .score-card .value { font-size: 32px; font-weight: 700; margin: 0 0 10px; letter-spacing: -1px; }
+  .score-card .breakdown { display: flex; justify-content: center; gap: 12px; font-size: 11px; color: var(--text-tertiary); }
+  .score-card .breakdown b { color: var(--text-secondary); font-weight: 600; }
+
+  .hint { text-align: center; font-size: 11px; color: var(--text-tertiary); margin: 4px 0 18px; }
+
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px;
+  }
+  .panel .who { text-align: center; font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--text-secondary); }
+  .panel .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn {
+    border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2);
+    color: var(--text); font-size: 13px; font-weight: 600; height: 58px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    transition: transform 0.08s ease;
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn i { font-size: 18px; }
+  .btn.hold.active { background: var(--hold-bg); border-color: var(--hold); color: var(--hold); }
+  .btn.conquer.active { background: var(--conquer-bg); border-color: var(--conquer); color: var(--conquer); }
+
+  .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .log-header p { font-size: 13px; color: var(--text-secondary); margin: 0; font-weight: 500; }
+  .undo-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+    border-radius: 10px; height: 32px; padding: 0 12px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .undo-btn:disabled { opacity: 0.4; }
+  .undo-btn i { font-size: 14px; }
+
+  .log-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; padding-bottom: 8px; }
+  .log-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface); border-radius: 10px; padding: 9px 12px; font-size: 12px;
+  }
+  .log-item.undone { opacity: 0.5; }
+  .log-item .who-action b { font-weight: 600; }
+  .log-item .score { color: var(--text-tertiary); }
+  .empty-log { text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 24px 0; }
+
+  .confirm-sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: var(--surface); border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0; padding: 18px 20px calc(20px + var(--safe-bottom));
+    transform: translateY(110%); transition: transform 0.22s ease;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.4);
+  }
+  .confirm-sheet.open { transform: translateY(0); }
+  .confirm-sheet p { margin: 0 0 16px; font-size: 14px; color: var(--text); text-align: center; }
+  .confirm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .confirm-row button {
+    height: 46px; border-radius: 12px; font-size: 14px; font-weight: 600; border: 1px solid var(--border);
+  }
+  .confirm-row .cancel { background: var(--surface-2); color: var(--text); }
+  .confirm-row .confirm { background: var(--danger); color: white; border-color: var(--danger); }
+
+  .scrim {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10; opacity: 0;
+    pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>Hold or Conquer</h1>
+    <button class="reset-btn" onclick="requestReset()" aria-label="Reset game"><i class="ti ti-refresh"></i></button>
+  </div>
+
+  <div class="scores">
+    <div class="score-card">
+      <p class="label">Me</p>
+      <p class="value" id="score-me">0</p>
+      <div class="breakdown">
+        <span>Hold <b id="me-hold-count">0</b></span>
+        <span>Conquer <b id="me-conquer-count">0</b></span>
+      </div>
+    </div>
+    <div class="score-card">
+      <p class="label">Opponent</p>
+      <p class="value" id="score-you">0</p>
+      <div class="breakdown">
+        <span>Hold <b id="you-hold-count">0</b></span>
+        <span>Conquer <b id="you-conquer-count">0</b></span>
+      </div>
+    </div>
+  </div>
+  <p class="hint">Score = hold + conquer clicks</p>
+
+  <div class="panels">
+    <div class="panel">
+      <p class="who">Me</p>
+      <div class="btns" id="me-buttons">
+        <button class="btn hold" data-choice="hold" onclick="pick('me','hold')"><i class="ti ti-shield"></i>Hold</button>
+        <button class="btn conquer" data-choice="conquer" onclick="pick('me','conquer')"><i class="ti ti-sword"></i>Conquer</button>
+      </div>
+    </div>
+    <div class="panel">
+      <p class="who">Opponent</p>
+      <div class="btns" id="you-buttons">
+        <button class="btn hold" data-choice="hold" onclick="pick('you','hold')"><i class="ti ti-shield"></i>Hold</button>
+        <button class="btn conquer" data-choice="conquer" onclick="pick('you','conquer')"><i class="ti ti-sword"></i>Conquer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-header">
+    <p>Click log</p>
+    <button class="undo-btn" id="undo-btn" onclick="requestUndo()" disabled>
+      <i class="ti ti-arrow-back-up"></i>Undo
+    </button>
+  </div>
+  <div class="log-list" id="log">
+    <div class="empty-log">No clicks yet</div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" onclick="closeSheets()"></div>
+
+<div class="confirm-sheet" id="undo-sheet">
+  <p id="undo-text"></p>
+  <div class="confirm-row">
+    <button class="cancel" onclick="closeSheets()">Cancel</button>
+    <button class="confirm" onclick="confirmUndo()">Undo</button>
+  </div>
+</div>
+
+<div class="confirm-sheet" id="reset-sheet">
+  <p>Reset the whole game? This clears both scores and the log.</p>
+  <div class="confirm-row">
+    <button class="cancel" onclick="closeSheets()">Cancel</button>
+    <button class="confirm" onclick="confirmReset()">Reset</button>
+  </div>
+</div>
+
+<script>
+const state = {
+  counts: { me: { hold: 0, conquer: 0 }, you: { hold: 0, conquer: 0 } },
+  log: [],
+  actions: []
+};
+
+function pick(side, choice) {
+  state.counts[side][choice] += 1;
+  state.actions.push({ side, choice });
+  refreshSide(side);
+  flashActive(side, choice);
+
+  const who = side === 'me' ? 'Me' : 'Opponent';
+  const label = choice === 'hold' ? 'hold' : 'conquer';
+  state.log.unshift({ who, text: `clicked ${label}`, total: state.counts[side].hold + state.counts[side].conquer, undone: false });
+  renderLog();
+  document.getElementById('undo-btn').disabled = false;
+}
+
+function flashActive(side, choice) {
+  const wrap = document.getElementById(side + '-buttons');
+  wrap.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  wrap.querySelector('[data-choice="' + choice + '"]').classList.add('active');
+  setTimeout(() => wrap.querySelectorAll('.btn').forEach(b => b.classList.remove('active')), 180);
+}
+
+function refreshSide(side) {
+  document.getElementById(side + '-hold-count').textContent = state.counts[side].hold;
+  document.getElementById(side + '-conquer-count').textContent = state.counts[side].conquer;
+  document.getElementById('score-' + side).textContent = state.counts[side].hold + state.counts[side].conquer;
+}
+
+function renderLog() {
+  const el = document.getElementById('log');
+  if (state.log.length === 0) {
+    el.innerHTML = '<div class="empty-log">No clicks yet</div>';
+    return;
+  }
+  el.innerHTML = state.log.map(l => `
+    <div class="log-item ${l.undone ? 'undone' : ''}">
+      <span class="who-action">${l.who} ${l.text}${l.undone ? ' <i class="ti ti-arrow-back-up"></i>' : ''}</span>
+      <span class="score">${l.who} score: ${l.total}</span>
+    </div>`).join('');
+}
+
+let pendingUndo = null;
+function requestUndo() {
+  const last = state.actions[state.actions.length - 1];
+  if (!last) return;
+  pendingUndo = last;
+  const who = last.side === 'me' ? 'Me' : 'Opponent';
+  const label = last.choice === 'hold' ? 'hold' : 'conquer';
+  document.getElementById('undo-text').textContent = `Undo ${who}'s last ${label} click?`;
+  openSheet('undo-sheet');
+}
+
+function confirmUndo() {
+  const last = state.actions.pop();
+  closeSheets();
+  if (!last) return;
+  state.counts[last.side][last.choice] = Math.max(0, state.counts[last.side][last.choice] - 1);
+  refreshSide(last.side);
+
+  const who = last.side === 'me' ? 'Me' : 'Opponent';
+  const label = last.choice === 'hold' ? 'hold' : 'conquer';
+  state.log.unshift({ who, text: `undid ${label}`, total: state.counts[last.side].hold + state.counts[last.side].conquer, undone: true });
+  renderLog();
+  document.getElementById('undo-btn').disabled = state.actions.length === 0;
+}
+
+function requestReset() { openSheet('reset-sheet'); }
+function confirmReset() {
+  state.counts = { me: { hold: 0, conquer: 0 }, you: { hold: 0, conquer: 0 } };
+  state.log = [];
+  state.actions = [];
+  refreshSide('me');
+  refreshSide('you');
+  renderLog();
+  document.getElementById('undo-btn').disabled = true;
+  closeSheets();
+}
+
+function openSheet(id) {
+  document.getElementById('scrim').classList.add('open');
+  document.getElementById(id).classList.add('open');
+}
+function closeSheets() {
+  document.getElementById('scrim').classList.remove('open');
+  document.getElementById('undo-sheet').classList.remove('open');
+  document.getElementById('reset-sheet').classList.remove('open');
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
